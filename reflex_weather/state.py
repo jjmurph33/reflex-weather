@@ -2,13 +2,14 @@ import urllib,json
 import datetime
 import reflex as rx
 
-zipdata = dict() # {zip: (lat,lon)}
+from . import location
 
 class State(rx.State):
     zipcode: str
     time_updated: str
     raw_data: str
     forecast_url: str
+    location_url: str
     forecast: list[dict] # list of forecast periods [today, tonight, tomorrow, ...]
     loaded: bool
 
@@ -19,31 +20,31 @@ class State(rx.State):
         self._check_weather()
 
     def on_load(self):
-        self.zipcode = '02212' # boston
+        if not self.zipcode:
+            self.zipcode = '02212' # boston
         self.loaded = False
 
     def _get_location(self):
         lat = lon = None
-        location = zipdata.get(self.zipcode)
-        if location:
-            lat = location[0]
-            lon = location[1]
-        else:
-            lat = 42.1979
-            lon = -71.0604
+        (lat,lon) = location.zipdata.get(self.zipcode)
+        if not lat or not lon:
+            lat = 42.3584  #
+            lon = -71.0598 # boston
         return (lat,lon)
 
     def _check_weather(self):
         (lat,lon) = self._get_location()
-        url = f'https://api.weather.gov/points/{lat},{lon}'
+        self.location_url = f'https://api.weather.gov/points/{lat},{lon}'
 
-        #print(url)
+        print(self.location_url)
 
-        weather_request = urllib.request.urlopen(url)
+        # TODO: add logging and error checking
+
+        weather_request = urllib.request.urlopen(self.location_url)
         weather_content = json.loads(weather_request.read())
         self.forecast_url = weather_content['properties']['forecast']
 
-        #print(f'Checking weather at {self.forecast_url}')
+        print(f'Checking weather at {self.forecast_url}')
 
         forecast_request = urllib.request.urlopen(self.forecast_url)
         forecast_content = json.loads(forecast_request.read())

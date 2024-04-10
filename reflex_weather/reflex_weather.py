@@ -1,6 +1,7 @@
 import reflex as rx
 
-from .state import State,zipdata
+from . import location
+from .state import State
 
 style = {
     "font_size": "16px",
@@ -61,10 +62,10 @@ def forecast_list() -> rx.Component:
 
 def current_weather() -> rx.Component:
     return rx.vstack(
-        rx.text(f'Checking weather from {State.forecast_url}',size='2'),
-        rx.spacer(),
         forecast_list(),
         rx.spacer(),
+        #rx.text(f'Checking weather from {State.location_url} and {State.forecast_url}',size='2'),
+        #rx.spacer(),
         rx.accordion.root(
             rx.accordion.item(
                 header="raw data",
@@ -72,37 +73,33 @@ def current_weather() -> rx.Component:
             ),
             collapsible=True,
         ),
+        info_sources(),
         spacing='5',
     )
 
+def info_sources() -> rx.Component:
+    return rx.hstack(
+        rx.text(f'weather data from weather.gov',size='1'),
+        rx.text(f'zip code and location data from geonames.org',size='1'),
+    )
 
 def index() -> rx.Component:
     return rx.container(
         rx.vstack(
-            rx.heading('Weather Forecast'),
-            zip_input(),
-            bg=rx.color('sky'),
+            rx.vstack(
+                rx.heading('Weather Forecast'),
+                zip_input(),
+                bg=rx.color('sky'),
+                border_radius = '1em',
+                padding="1em",
+            ),
+            rx.cond(State.loaded,
+                    current_weather(),
+                    None),
         ),
-        rx.cond(State.loaded,
-                current_weather(),
-                None),
-        padding="1em",
-    height="100vh",
+        height="100vh",
     )
 
-def load_zip_data():
-    zipdatafile = "data/zipcodes.txt"
-
-    with open(zipdatafile, 'r') as f:
-        for line in f:
-            columns = line.strip().split("\t") # tab delimited file
-            zip = columns[1]
-            if zip:
-                lat = columns[9]
-                lon = columns[10]
-                zipdata[zip] = (lat,lon)
-
+location.init()
 app = rx.App(style=style)
 app.add_page(index, title='Weather', on_load=State.on_load)
-load_zip_data()
-
