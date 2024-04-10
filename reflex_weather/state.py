@@ -2,6 +2,8 @@ import urllib,json
 import datetime
 import reflex as rx
 
+zipdata = dict() # {zip: (lat,lon)}
+
 class State(rx.State):
     zipcode: str
     time_updated: str
@@ -17,13 +19,25 @@ class State(rx.State):
         self._check_weather()
 
     def on_load(self):
-        self.zipcode = '12345'
+        self.zipcode = '02212' # boston
         self.loaded = False
 
+    def _get_location(self):
+        lat = lon = None
+        location = zipdata.get(self.zipcode)
+        if location:
+            lat = location[0]
+            lon = location[1]
+        else:
+            lat = 42.1979
+            lon = -71.0604
+        return (lat,lon)
+
     def _check_weather(self):
-        lat = 42.1979
-        lon = -71.0604
+        (lat,lon) = self._get_location()
         url = f'https://api.weather.gov/points/{lat},{lon}'
+
+        #print(url)
 
         weather_request = urllib.request.urlopen(url)
         weather_content = json.loads(weather_request.read())
@@ -47,7 +61,7 @@ class State(rx.State):
             self.forecast.append(periods[i])
 
         data = ''.join(str(periods))
-        print(data)
+        #print(data)
         self.raw_data = data
 
         self.loaded = True

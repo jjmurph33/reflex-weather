@@ -1,6 +1,6 @@
 import reflex as rx
 
-from .state import State
+from .state import State,zipdata
 
 style = {
     "font_size": "16px",
@@ -8,7 +8,6 @@ style = {
 
 style_button = {
     'border_radius':'1em',
-    'box_shadow':'rgba(151, 65, 252, 0.8) 0 15px 30px -10px',
     'background_image':'linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(48,85,189,1) 0%, rgba(47,76,184,1) 100%)',
     'box_sizing':'border-box',
     'color':'white',
@@ -91,6 +90,19 @@ def index() -> rx.Component:
     height="100vh",
     )
 
+def load_zip_data():
+    zipdatafile = "data/zipcodes.txt"
+
+    with open(zipdatafile, 'r') as f:
+        for line in f:
+            columns = line.strip().split("\t") # tab delimited file
+            zip = columns[1]
+            if zip:
+                lat = columns[9]
+                lon = columns[10]
+                zipdata[zip] = (lat,lon)
 
 app = rx.App(style=style)
 app.add_page(index, title='Weather', on_load=State.on_load)
+load_zip_data()
+
