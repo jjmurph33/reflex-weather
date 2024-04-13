@@ -1,5 +1,7 @@
 zipdata = dict() # {zip: (lat,lon)}
 
+url_cache = dict() # {url: response}
+
 def init():
     # TODO: make this all threaded
     load_ip_data()

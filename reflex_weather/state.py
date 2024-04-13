@@ -1,15 +1,14 @@
 import urllib,json
 import datetime
 import reflex as rx
+from pprint import pprint
 
 from . import location
 
 class State(rx.State):
     zipcode: str
     time_updated: str
-    raw_data: str
     forecast_url: str
-    location_url: str
     forecast: list[dict] # list of forecast periods [today, tonight, tomorrow, ...]
     loaded: bool
 
@@ -26,28 +25,39 @@ class State(rx.State):
 
     def _get_location(self):
         lat = lon = None
-        (lat,lon) = location.zipdata.get(self.zipcode)
-        if not lat or not lon:
-            lat = 42.3584  #
+        location_data = location.zipdata.get(self.zipcode)
+        if location_data:
+            (lat,lon) = location_data
+        else:
+            lat = 42.3584  # default to
             lon = -71.0598 # boston
         return (lat,lon)
 
     def _check_weather(self):
         (lat,lon) = self._get_location()
-        self.location_url = f'https://api.weather.gov/points/{lat},{lon}'
-
-        print(self.location_url)
+        location_url = f'https://api.weather.gov/points/{lat},{lon}'
 
         # TODO: add logging and error checking
 
-        weather_request = urllib.request.urlopen(self.location_url)
-        weather_content = json.loads(weather_request.read())
+        #print(location_url)
+        #print('location cache:')
+        #pprint(location.url_cache)
+
+        # the location url is used to get the forecast url
+        # this shouldn't change so we cache the results indefinitely
+        weather_content = location.url_cache.get(location_url)
+        if not weather_content:
+            weather_request = urllib.request.urlopen(location_url)
+            weather_content = json.loads(weather_request.read())
+            location.url_cache[location_url] = weather_content
+
         self.forecast_url = weather_content['properties']['forecast']
 
-        print(f'Checking weather at {self.forecast_url}')
+        #print(f'Checking weather at {self.forecast_url}')
 
         forecast_request = urllib.request.urlopen(self.forecast_url)
         forecast_content = json.loads(forecast_request.read())
+        # TODO: cache the forecast_content
 
         #time_now = datetime.datetime.now().astimezone(datetime.timezone.utc)
 
@@ -56,14 +66,6 @@ class State(rx.State):
         #self.time_diff = time_now - self.time_updated
 
         periods = forecast_content['properties']['periods']
-
-        self.forecast = list()
-        for i in range(3):
-            self.forecast.append(periods[i])
-
-        data = ''.join(str(periods))
-        #print(data)
-        self.raw_data = data
-
+        self.forecast = list(periods)
         self.loaded = True
 

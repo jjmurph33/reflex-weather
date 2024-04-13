@@ -64,15 +64,6 @@ def current_weather() -> rx.Component:
     return rx.vstack(
         forecast_list(),
         rx.spacer(),
-        #rx.text(f'Checking weather from {State.location_url} and {State.forecast_url}',size='2'),
-        #rx.spacer(),
-        rx.accordion.root(
-            rx.accordion.item(
-                header="raw data",
-                content=State.raw_data,
-            ),
-            collapsible=True,
-        ),
         info_sources(),
         spacing='5',
     )
