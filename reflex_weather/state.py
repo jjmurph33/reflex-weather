@@ -1,12 +1,12 @@
 import urllib,json
 import datetime
 import reflex as rx
-from pprint import pprint
+#from pprint import pprint
 
 from . import location
 
 class State(rx.State):
-    zipcode: str
+    zipcode: str = rx.LocalStorage(name='zipcode') # LocalStorage saves zipcode in browser
     time_updated: str
     forecast_url: str
     forecast: list[dict] # list of forecast periods [today, tonight, tomorrow, ...]

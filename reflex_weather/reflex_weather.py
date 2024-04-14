@@ -63,13 +63,13 @@ def forecast_list() -> rx.Component:
 def current_weather() -> rx.Component:
     return rx.vstack(
         forecast_list(),
-        rx.spacer(),
         info_sources(),
         spacing='5',
     )
 
 def info_sources() -> rx.Component:
     return rx.hstack(
+        rx.spacer(),
         rx.text(f'weather data from weather.gov',size='1'),
         rx.text(f'zip code and location data from geonames.org',size='1'),
     )
@@ -81,7 +81,7 @@ def index() -> rx.Component:
                 rx.heading('Weather Forecast'),
                 zip_input(),
                 bg=rx.color('sky'),
-                border_radius = '1em',
+                border_radius = '1.5em',
                 padding="1em",
             ),
             rx.cond(State.loaded,
