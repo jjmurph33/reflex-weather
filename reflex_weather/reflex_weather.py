@@ -44,7 +44,7 @@ def forecast_item(data: dict) -> rx.Component:
             rx.hstack(
                 rx.image(src=icon),
                 rx.vstack(
-                    rx.text(f'{temperature} %',size='6'),
+                    rx.text(f'{temperature}\u00B0',size='6'),
                     align='center',
                     justify='center'
                 )
@@ -74,6 +74,9 @@ def info_sources() -> rx.Component:
         rx.text(f'zip code and location data from geonames.org',size='1'),
     )
 
+def display_loading_error() -> rx.Component:
+    return rx.text('Sorry, an error has occurred')
+
 def index() -> rx.Component:
     return rx.container(
         rx.vstack(
@@ -84,6 +87,9 @@ def index() -> rx.Component:
                 border_radius = '1.5em',
                 padding="1em",
             ),
+            rx.cond(State.error,
+                    display_loading_error(),
+                    None),
             rx.cond(State.loaded,
                     current_weather(),
                     None),
