@@ -1,39 +1,30 @@
 import urllib,json
 import datetime
+import logging
 import reflex as rx
 
 from . import location
 
+
 class State(rx.State):
-    zipcode: str = rx.LocalStorage(name='zipcode') # LocalStorage saves zipcode in browser
-    time_updated: str
-    forecast_url: str
+    zipcode: str = rx.LocalStorage(name='zipcode')
     forecast: list[dict] # list of forecast periods [today, tonight, tomorrow, ...]
-    loaded: bool # True when the forecast is fully loaded
-    error: bool # True if there were any errors during loading
+    hourly_forecast: list[dict] # list of hourly forecast periods
+    _status = 'ready'
 
-    def lookup_button_handler(self,form_data: dict[str, str]):
-        new_zip = form_data.get('zipcode')
-        if new_zip:
-            self.zipcode = new_zip
-        self._check_weather()
-
-    def on_load(self):
-        if not self.zipcode:
-            self.zipcode = '02212' # boston
-        self.error = False
-        self.loaded = False
+    def lookup_button_handler(self):
+        if self.zipcode:
+            self._check_weather()
 
     def _get_location(self):
+        # returns the latitude and longitude for use by the weather api
         # just US zip codes for now, going to expand this later
         lat = lon = None
         (lat,lon) = location.zipdata.get(self.zipcode)
         return (lat,lon)
 
     def _check_weather(self):
-        # the loaded and error flags are used by the front end to know what to display
-        self.loaded = False
-        self.error = False
+        self._status = 'loading'
 
         try:
             (lat,lon) = self._get_location()
@@ -42,36 +33,52 @@ class State(rx.State):
                 return
 
             location_url = f'https://api.weather.gov/points/{lat},{lon}'
+            logging.info(f'Using location url {location_url}')
 
-            # TODO: add logging and error checking
-
-            # the location url is used to get the forecast url
-            # this shouldn't change so we cache the results indefinitely
+            # the location url is used to get the forecast urls
+            # this content shouldn't change so we cache the results indefinitely
             weather_content = location.url_cache.get(location_url)
             if not weather_content:
                 weather_request = urllib.request.urlopen(location_url)
                 weather_content = json.loads(weather_request.read())
+                logging.info('Weather content loaded')
                 location.url_cache[location_url] = weather_content
 
             self.forecast_url = weather_content['properties']['forecast']
-
-            #print(f'Checking weather at {self.forecast_url}')
+            logging.info(f'Checking weather at {self.forecast_url}')
 
             forecast_request = urllib.request.urlopen(self.forecast_url)
             forecast_content = json.loads(forecast_request.read())
+            logging.info('Forecast data loaded')
             # TODO: cache the forecast_content
 
             #time_now = datetime.datetime.now().astimezone(datetime.timezone.utc)
-
             self.time_updated = datetime.datetime.fromisoformat(forecast_content['properties']['updated'])
-
             #self.time_diff = time_now - self.time_updated
 
-            periods = forecast_content['properties']['periods']
-            self.forecast = list(periods)
-            self.loaded = True
-        except:
-            # catch any unhandled exceptions
-            # TODO: log and report them
-            self.error = True
+            hourly_forecast_url = weather_content['properties']['forecastHourly']
+            logging.info(f'Checking hourly weather at {hourly_forecast_url}')
+            hourly_forecast_request = urllib.request.urlopen(hourly_forecast_url)
+            hourly_forecast_content = json.loads(hourly_forecast_request.read())
+            logging.info('Forecast data loaded')
+
+            self.forecast = list(forecast_content['properties']['periods'])
+            self.hourly_forecast = list(hourly_forecast_content['properties']['periods'])
+
+            self._status = 'loaded'
+        except Exception as e:
+            logging.error(e)
+            self._status = 'error'
+
+    @rx.var
+    def is_loading(self) -> bool:
+        return self._status == 'loading'
+
+    @rx.var
+    def is_loaded(self) -> bool:
+        return self._status == 'loaded'
+
+    @rx.var
+    def is_error(self) -> bool:
+        return self._status == 'error'
 

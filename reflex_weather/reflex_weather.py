@@ -1,3 +1,4 @@
+import logging
 import reflex as rx
 
 from . import location
@@ -15,22 +16,19 @@ style_button = {
     'opacity':1,
 }
 
-
 def zip_input() -> rx.Component:
-    return rx.form(
-        rx.hstack(
-            rx.text('Zip Code'),
-                rx.input(
-                    name='zipcode',
-                    placeholder=State.zipcode,
-                    bg='white',
-                ),
-            rx.button('Lookup',style=style_button),
+    return rx.hstack(
+        rx.text('Zip Code'),
+        rx.input(
+            name='zipcode',
+            placeholder=State.zipcode,
+            bg='white',
+            on_blur=State.set_zipcode,
         ),
-        on_submit=State.lookup_button_handler,
-        reset_on_submit=True,
+        rx.button('Lookup',style=style_button,
+                  on_click=State.lookup_button_handler,
+                  ),
     )
-
 
 def forecast_item(data: dict) -> rx.Component:
     name = data['name']
@@ -53,7 +51,6 @@ def forecast_item(data: dict) -> rx.Component:
         )
     )
 
-
 def forecast_list() -> rx.Component:
     return rx.vstack(
         rx.foreach(State.forecast, forecast_item),
@@ -61,6 +58,7 @@ def forecast_list() -> rx.Component:
     )
 
 def current_weather() -> rx.Component:
+    # TODO: add hourly forecast
     return rx.vstack(
         forecast_list(),
         info_sources(),
@@ -77,6 +75,9 @@ def info_sources() -> rx.Component:
 def display_loading_error() -> rx.Component:
     return rx.text('Sorry, an error has occurred')
 
+def display_loading_message() -> rx.Component:
+    return rx.text('Loading...')
+
 def index() -> rx.Component:
     return rx.container(
         rx.vstack(
@@ -84,19 +85,19 @@ def index() -> rx.Component:
                 rx.heading('Weather Forecast'),
                 zip_input(),
                 bg=rx.color('sky'),
-                border_radius = '1.5em',
-                padding="1em",
+                border_radius = '2em',
+                padding='1em',
             ),
-            rx.cond(State.error,
-                    display_loading_error(),
-                    None),
-            rx.cond(State.loaded,
-                    current_weather(),
-                    None),
+            rx.cond(State.is_error,display_loading_error()),
+            rx.cond(State.is_loading,display_loading_message()),
+            rx.cond(State.is_loaded,current_weather()),
         ),
         height="100vh",
     )
 
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.WARN)
+logging.debug('*Starting*')
+
 location.init()
 app = rx.App(style=style)
-app.add_page(index, title='Weather', on_load=State.on_load)
+app.add_page(index, title='Weather')
