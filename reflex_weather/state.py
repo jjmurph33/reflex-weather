@@ -5,11 +5,13 @@ import reflex as rx
 
 from . import location
 
+forecast_cache = dict()
+hourly_cache = dict()
 
-class State(rx.State):
+class Weather(rx.State):
     zipcode: str = rx.LocalStorage(name='zipcode')
     forecast: list[dict] # list of forecast periods [today, tonight, tomorrow, ...]
-    hourly_forecast: list[dict] # list of hourly forecast periods
+    hourly: list[dict] # list of hourly forecast periods
     _status = 'ready'
 
     def lookup_button_handler(self):
@@ -43,27 +45,39 @@ class State(rx.State):
                 weather_content = json.loads(weather_request.read())
                 logging.info('Weather content loaded')
                 location.url_cache[location_url] = weather_content
+            else:
+                logging.info('Weather content loaded from cache')
 
             self.forecast_url = weather_content['properties']['forecast']
             logging.info(f'Checking weather at {self.forecast_url}')
 
+            #forecast_content = forecast_cache.get(self.forecast_url)
+            #if not forecast_content:
             forecast_request = urllib.request.urlopen(self.forecast_url)
             forecast_content = json.loads(forecast_request.read())
             logging.info('Forecast data loaded')
-            # TODO: cache the forecast_content
+            forecast_cache[self.forecast_url] = forecast_content
+            #else:
+            #    logging.info('Forecast data loaded from cache')
 
             #time_now = datetime.datetime.now().astimezone(datetime.timezone.utc)
             self.time_updated = datetime.datetime.fromisoformat(forecast_content['properties']['updated'])
             #self.time_diff = time_now - self.time_updated
 
-            hourly_forecast_url = weather_content['properties']['forecastHourly']
-            logging.info(f'Checking hourly weather at {hourly_forecast_url}')
-            hourly_forecast_request = urllib.request.urlopen(hourly_forecast_url)
-            hourly_forecast_content = json.loads(hourly_forecast_request.read())
-            logging.info('Forecast data loaded')
+            hourly_url = weather_content['properties']['forecastHourly']
+            logging.info(f'Checking hourly weather at {hourly_url}')
+
+            #hourly_content = hourly_cache.get(hourly_url)
+            #if not hourly_content:
+            hourly_request = urllib.request.urlopen(hourly_url)
+            hourly_content = json.loads(hourly_request.read())
+            logging.info('Hourly forecast data loaded')
+            hourly_cache[self.forecast_url] = forecast_content
+            #else:
+            #    logging.info('Hourly forecast data loaded from cache')
 
             self.forecast = list(forecast_content['properties']['periods'])
-            self.hourly_forecast = list(hourly_forecast_content['properties']['periods'])
+            self.hourly = list(hourly_content['properties']['periods'])
 
             self._status = 'loaded'
         except Exception as e:

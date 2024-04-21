@@ -2,7 +2,7 @@ import logging
 import reflex as rx
 
 from . import location
-from .state import State
+from .state import Weather
 
 style = {
     "font_size": "16px",
@@ -16,44 +16,50 @@ style_button = {
     'opacity':1,
 }
 
+style_forecast = {
+    "font_size": "18px",
+    "color": "#25549d",
+    "font_weight": "bold",
+    "transform": "translate(5px, -5px)"
+}
+
 def zip_input() -> rx.Component:
     return rx.hstack(
         rx.text('Zip Code'),
         rx.input(
             name='zipcode',
-            placeholder=State.zipcode,
+            placeholder=Weather.zipcode,
             bg='white',
-            on_blur=State.set_zipcode,
+            on_blur=Weather.set_zipcode,
         ),
         rx.button('Lookup',style=style_button,
-                  on_click=State.lookup_button_handler,
+                  on_click=Weather.lookup_button_handler,
                   ),
     )
 
-def forecast_item(data: dict) -> rx.Component:
-    name = data['name']
-    detail = data['detailedForecast']
-    temperature = data['temperature']
-    icon = data['icon']
+def forecast_item(forecast: dict) -> rx.Component:
     return rx.card(
         rx.vstack(
-            rx.text.strong(name,size='4'),
-            rx.text(detail,size='3'),
             rx.hstack(
-                rx.image(src=icon),
+                rx.text.strong(forecast['name'],size='4'),
+                rx.text(forecast['shortForecast'], style=style_forecast),
+            ),
+            rx.hstack(
+                rx.image(src=forecast['icon']),
                 rx.vstack(
-                    rx.text(f'{temperature}\u00B0',size='6'),
-                    align='center',
+                    rx.text(f'{forecast["temperature"]}\u00B0',size='6'),
+                    rx.text(forecast['detailedForecast'], size='2'),
                     justify='center'
                 )
             ),
-            spacing='1'
+            spacing='1',
+            border_radius='1em',
         )
     )
 
 def forecast_list() -> rx.Component:
     return rx.vstack(
-        rx.foreach(State.forecast, forecast_item),
+        rx.foreach(Weather.forecast, forecast_item),
         spacing='5'
     )
 
@@ -88,11 +94,12 @@ def index() -> rx.Component:
                 border_radius = '2em',
                 padding='1em',
             ),
-            rx.cond(State.is_error,display_loading_error()),
-            rx.cond(State.is_loading,display_loading_message()),
-            rx.cond(State.is_loaded,current_weather()),
+            rx.cond(Weather.is_error,display_loading_error()),
+            rx.cond(Weather.is_loading,display_loading_message()),
+            rx.cond(Weather.is_loaded,current_weather()),
         ),
-        height="100vh",
+        height='100vh',
+        margin='5px',
     )
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.WARN)
