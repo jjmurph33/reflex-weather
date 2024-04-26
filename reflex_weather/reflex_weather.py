@@ -1,8 +1,9 @@
 import logging
+from datetime import datetime
 import reflex as rx
 
 from . import location
-from .state import Weather
+from .state import Weather,Forecast
 
 style = {
     "font_size": "16px",
@@ -63,13 +64,45 @@ def forecast_list() -> rx.Component:
         spacing='5'
     )
 
-def current_weather() -> rx.Component:
-    # TODO: add hourly forecast
-    return rx.vstack(
-        forecast_list(),
-        info_sources(),
-        spacing='5',
+def hourly_forecast() -> rx.Component:
+    def hourly_forecast_item(hourly: Forecast) -> rx.Component:
+        return rx.hstack(
+            rx.text(hourly.time),
+            rx.text(hourly.short),
+            rx.text(f'{hourly.temperature}\u00B0'),
+        )
+    return rx.card(
+        rx.vstack(
+            rx.foreach(Weather.hourly, hourly_forecast_item),
+            spacing='1'
+        )
     )
+
+def current_weather() -> rx.Component:
+    return rx.tabs.root(
+        rx.tabs.list(
+            rx.tabs.trigger("Daily", value="daily"),
+            rx.tabs.trigger("Hourly", value="hourly"),
+        ),
+        rx.tabs.content(
+            rx.vstack(
+                forecast_list(),
+                info_sources(),
+                spacing='5',
+            ),
+            value="daily",
+        ),
+        rx.tabs.content(
+            rx.vstack(
+                hourly_forecast(),
+                info_sources(),
+            ),
+            value="hourly",
+        ),
+        default_value="daily",
+    )
+
+
 
 def info_sources() -> rx.Component:
     return rx.hstack(
@@ -102,7 +135,7 @@ def index() -> rx.Component:
         margin='5px',
     )
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.WARN)
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.INFO)
 logging.debug('*Starting*')
 
 location.init()
