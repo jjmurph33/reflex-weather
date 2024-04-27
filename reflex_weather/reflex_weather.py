@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 import reflex as rx
 
 from . import location
@@ -38,18 +37,18 @@ def zip_input() -> rx.Component:
     )
 
 def display_forecast() -> rx.Component:
-    def forecast_item(forecast: dict) -> rx.Component:
+    def forecast_item(forecast: Forecast) -> rx.Component:
         return rx.card(
             rx.vstack(
                 rx.hstack(
-                    rx.text.strong(forecast['name'], size='4'),
-                    rx.text(forecast['shortForecast'], style=style_forecast),
+                    rx.text.strong(forecast.period_name, size='4'),
+                    rx.text(forecast.short, style=style_forecast),
                 ),
                 rx.hstack(
-                    rx.image(src=forecast['icon']),
+                    rx.image(src=forecast.icon),
                     rx.vstack(
-                        rx.text(f'{forecast["temperature"]}\u00B0',size='6'),
-                        rx.text(forecast['detailedForecast'], size='2'),
+                        rx.text(f'{forecast.temperature}\u00B0',size='6'),
+                        rx.text(forecast.detailed, size='2'),
                         justify='center'
                     )
                 ),
@@ -68,6 +67,7 @@ def display_hourly_forecast() -> rx.Component:
             rx.text(hourly.time),
             rx.text(hourly.short),
             rx.text(f'{hourly.temperature}\u00B0'),
+            #rx.image(src=hourly.icon),
         )
     return rx.card(
         rx.vstack(
@@ -93,6 +93,7 @@ def current_weather() -> rx.Component:
             ),
             default_value="daily",
         ),
+        rx.text(f'Last updated {Weather.last_updated}',size='2'),
         display_sources(),
     )
 
@@ -127,7 +128,7 @@ def index() -> rx.Component:
         margin='5px',
     )
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.INFO)
 logging.debug('*Starting*')
 
 location.init()
