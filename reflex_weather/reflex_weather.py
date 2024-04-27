@@ -34,37 +34,35 @@ def zip_input() -> rx.Component:
             on_blur=Weather.set_zipcode,
         ),
         rx.button('Lookup',style=style_button,
-                  on_click=Weather.lookup_button_handler,
-                  ),
+                  on_click=Weather.lookup_button_handler),
     )
 
-def forecast_item(forecast: dict) -> rx.Component:
-    return rx.card(
-        rx.vstack(
-            rx.hstack(
-                rx.text.strong(forecast['name'],size='4'),
-                rx.text(forecast['shortForecast'], style=style_forecast),
-            ),
-            rx.hstack(
-                rx.image(src=forecast['icon']),
-                rx.vstack(
-                    rx.text(f'{forecast["temperature"]}\u00B0',size='6'),
-                    rx.text(forecast['detailedForecast'], size='2'),
-                    justify='center'
-                )
-            ),
-            spacing='1',
-            border_radius='1em',
+def display_forecast() -> rx.Component:
+    def forecast_item(forecast: dict) -> rx.Component:
+        return rx.card(
+            rx.vstack(
+                rx.hstack(
+                    rx.text.strong(forecast['name'], size='4'),
+                    rx.text(forecast['shortForecast'], style=style_forecast),
+                ),
+                rx.hstack(
+                    rx.image(src=forecast['icon']),
+                    rx.vstack(
+                        rx.text(f'{forecast["temperature"]}\u00B0',size='6'),
+                        rx.text(forecast['detailedForecast'], size='2'),
+                        justify='center'
+                    )
+                ),
+                spacing='1',
+                border_radius='1em',
+            )
         )
-    )
-
-def forecast_list() -> rx.Component:
     return rx.vstack(
         rx.foreach(Weather.forecast, forecast_item),
         spacing='5'
     )
 
-def hourly_forecast() -> rx.Component:
+def display_hourly_forecast() -> rx.Component:
     def hourly_forecast_item(hourly: Forecast) -> rx.Component:
         return rx.hstack(
             rx.text(hourly.time),
@@ -79,32 +77,26 @@ def hourly_forecast() -> rx.Component:
     )
 
 def current_weather() -> rx.Component:
-    return rx.tabs.root(
-        rx.tabs.list(
-            rx.tabs.trigger("Daily", value="daily"),
-            rx.tabs.trigger("Hourly", value="hourly"),
-        ),
-        rx.tabs.content(
-            rx.vstack(
-                forecast_list(),
-                info_sources(),
-                spacing='5',
+    return rx.vstack(
+        rx.tabs.root(
+            rx.tabs.list(
+                rx.tabs.trigger("Daily", value="daily"),
+                rx.tabs.trigger("Hourly", value="hourly"),
             ),
-            value="daily",
-        ),
-        rx.tabs.content(
-            rx.vstack(
-                hourly_forecast(),
-                info_sources(),
+            rx.tabs.content(
+                    display_forecast(),
+                    value="daily",
             ),
-            value="hourly",
+            rx.tabs.content(
+                    display_hourly_forecast(),
+                    value="hourly",
+            ),
+            default_value="daily",
         ),
-        default_value="daily",
+        display_sources(),
     )
 
-
-
-def info_sources() -> rx.Component:
+def display_sources() -> rx.Component:
     return rx.hstack(
         rx.spacer(),
         rx.text(f'weather data from weather.gov',size='1'),
@@ -135,7 +127,7 @@ def index() -> rx.Component:
         margin='5px',
     )
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.DEBUG)
 logging.debug('*Starting*')
 
 location.init()

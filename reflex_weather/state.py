@@ -22,9 +22,14 @@ class Weather(rx.State):
     hourly: list[Forecast] # list of hourly forecast periods
     _status = 'ready'
 
-    def lookup_button_handler(self):
+    async def lookup_button_handler(self):
+        print('lookup_button_handler')
         if self.zipcode:
+            print(self.zipcode)
+            self._status = 'loading'
+            yield
             self._check_weather()
+            print('done')
 
     def _get_location(self):
         # returns the latitude and longitude for use by the weather api
@@ -34,8 +39,6 @@ class Weather(rx.State):
         return (lat,lon)
 
     def _check_weather(self):
-        self._status = 'loading'
-
         try:
             (lat,lon) = self._get_location()
             if not lat or not lon:
