@@ -27,13 +27,14 @@ def zip_input() -> rx.Component:
     return rx.hstack(
         rx.text('Zip Code'),
         rx.input(
-            name='zipcode',
-            placeholder=Weather.zipcode,
-            bg='white',
+            max_length=5,
             on_blur=Weather.set_zipcode,
         ),
-        rx.button('Lookup',style=style_button,
-                  on_click=Weather.lookup_button_handler),
+        rx.button('Check the weather',
+                  style=style_button,
+                  on_click=Weather.lookup_button_handler
+        ),
+        align='center',
     )
 
 def display_forecast() -> rx.Component:
@@ -47,7 +48,7 @@ def display_forecast() -> rx.Component:
                 rx.hstack(
                     rx.image(src=forecast.icon),
                     rx.vstack(
-                        rx.text(f'{forecast.temperature}\u00B0',size='6'),
+                        rx.text(f'{forecast.temperature}\u00B0', size='6'),
                         rx.text(forecast.detailed, size='2'),
                         justify='center'
                     )
@@ -58,22 +59,24 @@ def display_forecast() -> rx.Component:
         )
     return rx.vstack(
         rx.foreach(Weather.forecast, forecast_item),
-        spacing='5'
+        spacing='5',
+        margin='5px',
     )
 
 def display_hourly_forecast() -> rx.Component:
     def hourly_forecast_item(hourly: Forecast) -> rx.Component:
-        return rx.hstack(
+        return rx.flex(
             rx.text(hourly.time),
+            rx.spacer(),
+            rx.text.strong((f'{hourly.temperature}\u00B0')),
+            rx.spacer(),
             rx.text(hourly.short),
-            rx.text(f'{hourly.temperature}\u00B0'),
-            #rx.image(src=hourly.icon),
+            spacing='4',
         )
-    return rx.card(
-        rx.vstack(
-            rx.foreach(Weather.hourly, hourly_forecast_item),
-            spacing='1'
-        )
+    return rx.vstack(
+        rx.foreach(Weather.hourly, hourly_forecast_item),
+        spacing='2',
+        margin='5px',
     )
 
 def current_weather() -> rx.Component:
@@ -84,31 +87,31 @@ def current_weather() -> rx.Component:
                 rx.tabs.trigger("Hourly", value="hourly"),
             ),
             rx.tabs.content(
-                    display_forecast(),
-                    value="daily",
+                display_forecast(),
+                value="daily",
             ),
             rx.tabs.content(
-                    display_hourly_forecast(),
-                    value="hourly",
+                display_hourly_forecast(),
+                value="hourly",
             ),
             default_value="daily",
         ),
-        rx.text(f'Last updated {Weather.last_updated}',size='2'),
+        rx.text(f'Last updated {Weather.last_updated}', size='2'),
         display_sources(),
     )
 
 def display_sources() -> rx.Component:
     return rx.hstack(
         rx.spacer(),
-        rx.text(f'weather data from weather.gov',size='1'),
-        rx.text(f'zip code and location data from geonames.org',size='1'),
+        rx.text(f'weather data from weather.gov', size='1'),
+        rx.text(f'zip code and location data from geonames.org', size='1'),
     )
 
 def display_loading_error() -> rx.Component:
-    return rx.text('Sorry, an error has occurred')
+    return rx.text('Sorry, an error has occurred', color_scheme='red', margin='10px')
 
 def display_loading_message() -> rx.Component:
-    return rx.text('Loading...')
+    return rx.text('Loading...', margin='10px')
 
 def index() -> rx.Component:
     return rx.container(
@@ -119,6 +122,7 @@ def index() -> rx.Component:
                 bg=rx.color('sky'),
                 border_radius = '2em',
                 padding='1em',
+                align='center'
             ),
             rx.cond(Weather.is_error,display_loading_error()),
             rx.cond(Weather.is_loading,display_loading_message()),

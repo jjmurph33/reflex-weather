@@ -19,7 +19,7 @@ class Forecast(rx.Base):
 
 
 class Weather(rx.State):
-    zipcode: str = rx.LocalStorage(name='zipcode')
+    zipcode: str = rx.LocalStorage(name='zipcode') # saved in browser
     forecast: list[Forecast] # list of forecast periods [today, tonight, tomorrow, ...]
     hourly: list[Forecast] # list of hourly forecast periods
     last_updated: str
