@@ -25,8 +25,9 @@ class Weather(rx.State):
     last_updated: str
     _status = 'ready'
 
-    async def lookup_button_handler(self):
-        if self.zipcode:
+    async def handle_submit(self, form: dict):
+        self.zipcode = form['zip']
+        if self.zipcode and len(self.zipcode) == 5:
             self._status = 'loading'
             yield
             self._check_weather()
@@ -52,10 +53,10 @@ class Weather(rx.State):
     def _load_forecast(self,url):
         content = forecast_cache.get(url)
         if not content:
-            request = urllib.request.urlopen(url)
-            content = json.loads(request.read())
+            response = urllib.request.urlopen(url)
+            content = json.loads(response.read())
             logging.info('Forecast data loaded')
-            forecast_cache[url] = content
+            #forecast_cache[url] = content
         else:
             logging.info('Forecast data loaded from cache')
 
@@ -73,10 +74,10 @@ class Weather(rx.State):
     def _load_hourly_forecast(self,url):
         content = hourly_cache.get(url)
         if not content:
-            request = urllib.request.urlopen(url)
-            content = json.loads(request.read())
+            response = urllib.request.urlopen(url)
+            content = json.loads(response.read())
             logging.info('Hourly forecast data loaded')
-            hourly_cache[url] = content
+            #hourly_cache[url] = content
         else:
             logging.info('Hourly forecast data loaded from cache')
         return content
@@ -89,38 +90,26 @@ class Weather(rx.State):
                 return
 
             url = f'https://api.weather.gov/points/{lat},{lon}'
-            logging.info(f'Using location url {url}')
+            logging.info(f'Weather url: {url}')
             weather_content = self._load_weather(url)
 
             forecast_url = weather_content['properties']['forecast']
-            logging.info(f'Checking weather at {forecast_url}')
+            logging.info(f'Forecast url {forecast_url}')
             forecast_content = self._load_forecast(forecast_url)
+            self.forecast = [Forecast(short=period['shortForecast'],
+                                      detailed=period['detailedForecast'],
+                                      temperature = period['temperature'],
+                                      icon = period['icon'],
+                                      period_name = period['name'])
+                            for period in forecast_content['properties']['periods']]
 
             hourly_url = weather_content['properties']['forecastHourly']
-            logging.info(f'Checking hourly weather at {hourly_url}')
+            logging.info(f'Hourly forecast url {hourly_url}')
             hourly_content = self._load_hourly_forecast(hourly_url)
-
-            periods = list()
-            for period in forecast_content['properties']['periods']:
-                start_time = datetime.fromisoformat(period['startTime'])
-                f = Forecast(short=period['shortForecast'],
-                             detailed=period['detailedForecast'],
-                             temperature = period['temperature'],
-                             icon = period['icon'],
-                             period_name = period['name'],
-                             )
-                periods.append(f)
-            self.forecast = periods
-
-            hourly_periods = list()
-            for period in hourly_content['properties']['periods']:
-                start_time = datetime.fromisoformat(period['startTime'])
-                f = Forecast(time=start_time.strftime('%A %-I%P'),
-                             short=period['shortForecast'],
-                             temperature=period['temperature'],
-                             )
-                hourly_periods.append(f)
-            self.hourly = hourly_periods
+            self.hourly = [Forecast(time=datetime.fromisoformat(period['startTime']).strftime('%A %-I%P'),
+                                    short=period['shortForecast'],
+                                    temperature=period['temperature'])
+                          for period in hourly_content['properties']['periods']]
 
             self._status = 'loaded'
         except Exception as e:
@@ -139,4 +128,6 @@ class Weather(rx.State):
     def is_error(self) -> bool:
         return self._status == 'error'
 
+    def on_load(self):
+        self._status = 'ready'
 

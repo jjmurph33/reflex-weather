@@ -20,21 +20,18 @@ style_forecast = {
     "font_size": "18px",
     "color": "#25549d",
     "font_weight": "bold",
-    "transform": "translate(5px, -5px)"
+    "transform": "translate(10px, -4px)"
 }
 
 def zip_input() -> rx.Component:
-    return rx.hstack(
-        rx.text('Zip Code'),
-        rx.input(
-            max_length=5,
-            on_blur=Weather.set_zipcode,
+    return rx.form(
+        rx.hstack(
+            rx.text('Zip Code'),
+            rx.input(name='zip', default_value=Weather.zipcode, max_length=5, autofocus=True),
+            rx.button('Check the weather', type='submit', style=style_button),
+            align='center',
         ),
-        rx.button('Check the weather',
-                  style=style_button,
-                  on_click=Weather.lookup_button_handler
-        ),
-        align='center',
+        on_submit=Weather.handle_submit,
     )
 
 def display_forecast() -> rx.Component:
@@ -83,18 +80,18 @@ def current_weather() -> rx.Component:
     return rx.vstack(
         rx.tabs.root(
             rx.tabs.list(
-                rx.tabs.trigger("Daily", value="daily"),
-                rx.tabs.trigger("Hourly", value="hourly"),
+                rx.tabs.trigger('Daily', value='daily'),
+                rx.tabs.trigger('Hourly', value='hourly'),
             ),
             rx.tabs.content(
                 display_forecast(),
-                value="daily",
+                value='daily',
             ),
             rx.tabs.content(
                 display_hourly_forecast(),
-                value="hourly",
+                value='hourly',
             ),
-            default_value="daily",
+            default_value='daily',
         ),
         rx.text(f'Last updated {Weather.last_updated}', size='2'),
         display_sources(),
@@ -120,7 +117,7 @@ def index() -> rx.Component:
                 rx.heading('Weather Forecast'),
                 zip_input(),
                 bg=rx.color('sky'),
-                border_radius = '2em',
+                border_radius='2em',
                 padding='1em',
                 align='center'
             ),
@@ -137,4 +134,4 @@ logging.debug('*Starting*')
 
 location.init()
 app = rx.App(style=style)
-app.add_page(index, title='Weather')
+app.add_page(index, title='Weather', on_load=Weather.on_load)
