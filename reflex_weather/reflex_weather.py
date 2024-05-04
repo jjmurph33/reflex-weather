@@ -4,7 +4,7 @@ import reflex as rx
 from . import location
 from .state import Weather,Forecast
 
-style = {
+style_main = {
     "font_size": "16px",
 }
 
@@ -27,8 +27,15 @@ def zip_input() -> rx.Component:
     return rx.form(
         rx.hstack(
             rx.text('Zip Code'),
-            rx.input(name='zip', default_value=Weather.zipcode, max_length=5, autofocus=True),
-            rx.button('Check the weather', type='submit', style=style_button),
+            rx.input(name='zip',
+                     default_value=Weather.zipcode,
+                     max_length=5,
+                     bg='white',
+                     autofocus=True),
+            rx.button('Lookup',
+                      type='submit',
+                      style=style_button
+                      ),
             align='center',
         ),
         on_submit=Weather.handle_submit,
@@ -133,5 +140,5 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 logging.debug('*Starting*')
 
 location.init()
-app = rx.App(style=style)
+app = rx.App(style=style_main)
 app.add_page(index, title='Weather', on_load=Weather.on_load)
