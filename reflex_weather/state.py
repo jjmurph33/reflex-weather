@@ -1,10 +1,11 @@
 import urllib,json
 import logging
 from datetime import datetime
-from zoneinfo import ZoneInfo
 import reflex as rx
 
 from . import location
+
+USE_MOCK_DATA = False # use the files in the testing folder instead of calling the real API
 
 forecast_cache = dict()
 hourly_cache = dict()
@@ -30,37 +31,41 @@ class Weather(rx.State):
         if self.zipcode and len(self.zipcode) == 5:
             self._status = 'loading'
             yield
-            self._check_weather()
+            url = self._get_location_url()
+            if url:
+                self._check_weather(url)
 
-    def _get_location(self):
-        # returns the latitude and longitude for use by the weather api
-        # just US zip codes for now, going to expand this later
+    def _get_location_url(self):
+        # build the location url from the latitude/longitude of the zipcode
         lat = lon = None
-        (lat,lon) = location.zipdata.get(self.zipcode)
-        return (lat,lon)
+        try:
+            (lat,lon) = location.zipdata.get(self.zipcode)
+        except TypeError:
+            logging.error(f'Error loading location data for zipcode {self.zipcode}')
+            self._status = 'error'
+            return None
+        return f'https://api.weather.gov/points/{lat},{lon}'
 
     def _load_weather(self,url):
-        content = location.url_cache.get(url)
-        if not content:
-            request = urllib.request.urlopen(url)
-            content = json.loads(request.read())
-            logging.info('Weather content loaded')
-            location.url_cache[url] = content
+        content = None
+        if USE_MOCK_DATA:
+            with open('testing/weather_content.json') as f:
+                content = json.load(f)
         else:
-            logging.info('Weather content loaded from cache')
+            response = urllib.request.urlopen(url)
+            content = json.loads(response.read())
+            logging.info('Weather content loaded')
         return content
 
     def _load_forecast(self,url):
-        content = forecast_cache.get(url)
-        if not content:
+        content = None
+        if USE_MOCK_DATA:
+            with open('testing/forecast_content.json') as f:
+                content = json.load(f)
+        else:
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
             logging.info('Forecast data loaded')
-            #forecast_cache[url] = content
-        else:
-            logging.info('Forecast data loaded from cache')
-
-        now = datetime.now(tz=ZoneInfo('localtime'))
         time_updated = datetime.fromisoformat(content['properties']['updated'])
         time_generated = datetime.fromisoformat(content['properties']['generatedAt'])
         time_diff = time_generated - time_updated
@@ -72,24 +77,18 @@ class Weather(rx.State):
         return content
 
     def _load_hourly_forecast(self,url):
-        content = hourly_cache.get(url)
-        if not content:
+        content = None
+        if USE_MOCK_DATA:
+            with open('testing/hourly_content.json') as f:
+                return json.load(f)
+        else:
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
-            logging.info('Hourly forecast data loaded')
-            #hourly_cache[url] = content
-        else:
-            logging.info('Hourly forecast data loaded from cache')
+            logging.info('Forecast data loaded')
         return content
 
-    def _check_weather(self):
-        try:
-            (lat,lon) = self._get_location()
-            if not lat or not lon:
-                self.error = True
-                return
-
-            url = f'https://api.weather.gov/points/{lat},{lon}'
+    def _check_weather(self,url):
+        try: 
             logging.info(f'Weather url: {url}')
             weather_content = self._load_weather(url)
 
