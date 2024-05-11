@@ -4,6 +4,8 @@ import reflex as rx
 from . import location
 from .state import Weather,Forecast
 
+logger = logging.getLogger('weather')
+
 style_main = {
     "font_size": "16px",
 }
@@ -29,6 +31,7 @@ def zip_input() -> rx.Component:
             rx.text('Zip Code'),
             rx.input(name='zip',
                      default_value=Weather.zipcode,
+                     min_length=5,
                      max_length=5,
                      bg='white',
                      autofocus=True),
@@ -69,17 +72,17 @@ def display_forecast() -> rx.Component:
 
 def display_hourly_forecast() -> rx.Component:
     def hourly_forecast_item(hourly: Forecast) -> rx.Component:
-        return rx.flex(
-            rx.text(hourly.time),
-            rx.spacer(),
-            rx.text.strong((f'{hourly.temperature}\u00B0')),
-            rx.spacer(),
-            rx.text(hourly.short),
-            spacing='4',
+        return rx.table.row(
+            rx.table.cell(hourly.time),
+            rx.table.cell(rx.text.strong((f'{hourly.temperature}\u00B0')),justify='end'),
+            rx.table.cell(hourly.short  ),
         )
-    return rx.vstack(
-        rx.foreach(Weather.hourly, hourly_forecast_item),
-        spacing='2',
+    return rx.flex(
+        rx.table.root(
+            rx.table.body(
+                rx.foreach(Weather.hourly, hourly_forecast_item),
+            )
+        ),
         margin='5px',
     )
 
@@ -136,9 +139,15 @@ def index() -> rx.Component:
         margin='5px',
     )
 
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S ', level=logging.INFO)
-logging.debug('*Starting*')
+
+logger.setLevel(logging.DEBUG)
+log_handler = logging.StreamHandler()
+log_formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s: %(message)s',datefmt='%m/%d/%Y %I:%M:%S')
+log_handler.setFormatter(log_formatter)
+logger.addHandler(log_handler)
 
 location.init()
+
 app = rx.App(style=style_main)
 app.add_page(index, title='Weather', on_load=Weather.on_load)
+logger.debug('Starting')

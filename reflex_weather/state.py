@@ -7,6 +7,8 @@ from . import location
 
 USE_MOCK_DATA = False # use the files in the testing folder instead of calling the real API
 
+logger = logging.getLogger('weather')
+
 forecast_cache = dict()
 hourly_cache = dict()
 
@@ -28,7 +30,8 @@ class Weather(rx.State):
 
     async def handle_submit(self, form: dict):
         self.zipcode = form['zip']
-        if self.zipcode and len(self.zipcode) == 5:
+        logger.debug(f'zip code: {self.zipcode}')
+        if self.zipcode:
             self._status = 'loading'
             yield
             url = self._get_location_url()
@@ -41,7 +44,7 @@ class Weather(rx.State):
         try:
             (lat,lon) = location.zipdata.get(self.zipcode)
         except TypeError:
-            logging.error(f'Error loading location data for zipcode {self.zipcode}')
+            logger.error(f'Error loading location data for zipcode {self.zipcode}')
             self._status = 'error'
             return None
         return f'https://api.weather.gov/points/{lat},{lon}'
@@ -49,23 +52,25 @@ class Weather(rx.State):
     def _load_weather(self,url):
         content = None
         if USE_MOCK_DATA:
+            logger.debug(f'loading mock weather content')
             with open('testing/weather_content.json') as f:
                 content = json.load(f)
         else:
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
-            logging.info('Weather content loaded')
+            logger.info('Weather content loaded')
         return content
 
     def _load_forecast(self,url):
         content = None
         if USE_MOCK_DATA:
+            logger.debug(f'loading mock forecast content')
             with open('testing/forecast_content.json') as f:
                 content = json.load(f)
         else:
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
-            logging.info('Forecast data loaded')
+            logger.info('Forecast data loaded')
         time_updated = datetime.fromisoformat(content['properties']['updated'])
         time_generated = datetime.fromisoformat(content['properties']['generatedAt'])
         time_diff = time_generated - time_updated
@@ -79,21 +84,22 @@ class Weather(rx.State):
     def _load_hourly_forecast(self,url):
         content = None
         if USE_MOCK_DATA:
+            logger.debug(f'loading mock hourly content')
             with open('testing/hourly_content.json') as f:
                 return json.load(f)
         else:
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
-            logging.info('Forecast data loaded')
+            logger.info('Forecast data loaded')
         return content
 
     def _check_weather(self,url):
         try: 
-            logging.info(f'Weather url: {url}')
+            logger.info(f'Weather url: {url}')
             weather_content = self._load_weather(url)
 
             forecast_url = weather_content['properties']['forecast']
-            logging.info(f'Forecast url {forecast_url}')
+            logger.info(f'Forecast url {forecast_url}')
             forecast_content = self._load_forecast(forecast_url)
             self.forecast = [Forecast(short=period['shortForecast'],
                                       detailed=period['detailedForecast'],
@@ -103,7 +109,7 @@ class Weather(rx.State):
                             for period in forecast_content['properties']['periods']]
 
             hourly_url = weather_content['properties']['forecastHourly']
-            logging.info(f'Hourly forecast url {hourly_url}')
+            logger.info(f'Hourly forecast url {hourly_url}')
             hourly_content = self._load_hourly_forecast(hourly_url)
             self.hourly = [Forecast(time=datetime.fromisoformat(period['startTime']).strftime('%A %-I%P'),
                                     short=period['shortForecast'],
@@ -112,7 +118,7 @@ class Weather(rx.State):
 
             self._status = 'loaded'
         except Exception as e:
-            logging.error(e)
+            logger.exception(e)
             self._status = 'error'
 
     @rx.var
