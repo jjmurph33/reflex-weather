@@ -140,7 +140,7 @@ def index() -> rx.Component:
     )
 
 
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 log_handler = logging.StreamHandler()
 log_formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s: %(message)s',datefmt='%m/%d/%Y %I:%M:%S')
 log_handler.setFormatter(log_formatter)

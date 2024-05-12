@@ -58,7 +58,7 @@ class Weather(rx.State):
         else:
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
-            logger.info('Weather content loaded')
+            logger.debug('Weather content loaded')
         return content
 
     def _load_forecast(self,url):
@@ -70,7 +70,7 @@ class Weather(rx.State):
         else:
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
-            logger.info('Forecast data loaded')
+            logger.debug('Forecast data loaded')
         time_updated = datetime.fromisoformat(content['properties']['updated'])
         time_generated = datetime.fromisoformat(content['properties']['generatedAt'])
         time_diff = time_generated - time_updated
@@ -90,7 +90,7 @@ class Weather(rx.State):
         else:
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
-            logger.info('Forecast data loaded')
+            logger.debug('Forecast data loaded')
         return content
 
     def _check_weather(self,url):
