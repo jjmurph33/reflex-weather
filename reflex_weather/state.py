@@ -19,6 +19,12 @@ class Forecast(rx.Base):
     temperature = ""
     icon = ""
     period_name = ""
+    is_daytime = ""
+    precipitation = ""
+    dewpoint = ""
+    humidity = ""
+    wind_speed = ""
+    wind_direction = ""
 
 
 class Weather(rx.State):
@@ -71,7 +77,7 @@ class Weather(rx.State):
             response = urllib.request.urlopen(url)
             content = json.loads(response.read())
             logger.debug('Forecast data loaded')
-        time_updated = datetime.fromisoformat(content['properties']['updated'])
+        time_updated = datetime.fromisoformat(content['properties']['updateTime'])
         time_generated = datetime.fromisoformat(content['properties']['generatedAt'])
         time_diff = time_generated - time_updated
         minutes_ago = int(time_diff.seconds / 60)
@@ -113,7 +119,12 @@ class Weather(rx.State):
             hourly_content = self._load_hourly_forecast(hourly_url)
             self.hourly = [Forecast(time=datetime.fromisoformat(period['startTime']).strftime('%A %-I%P'),
                                     short=period['shortForecast'],
-                                    temperature=period['temperature'])
+                                    temperature=period['temperature'],
+                                    icon = period['icon'],
+                                    is_daytime=period['isDaytime'],
+                                    precipitation=period['probabilityOfPrecipitation']['value'],
+                                    wind_speed=period['windSpeed'],
+                                    wind_direction=period['windDirection'])
                           for period in hourly_content['properties']['periods']]
 
             self._status = 'loaded'

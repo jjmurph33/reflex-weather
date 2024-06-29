@@ -75,7 +75,9 @@ def display_hourly_forecast() -> rx.Component:
         return rx.table.row(
             rx.table.cell(hourly.time),
             rx.table.cell(rx.text.strong((f'{hourly.temperature}\u00B0')),justify='end'),
-            rx.table.cell(hourly.short  ),
+            rx.table.cell(hourly.short),
+            rx.table.cell(rx.text(f'{hourly.precipitation}% chance of precipitation'),
+            )
         )
     return rx.flex(
         rx.table.root(
